@@ -2,6 +2,7 @@
 #define DATA_HPP
 
 #include <string>
+#include <fstream>
 
 class Data {
     private:
@@ -21,6 +22,14 @@ class Data {
 
     void printData();
 
+    // Dodane funkcje
+    std::string getTime() const;
+    float getAutokonsumpcja() const;
+    float getEksport() const;
+    float getImport() const;
+    float getPobor() const;
+    float getProdukcja() const;
+    void serialize(std::ofstream& out) const;
 };
 
 #endif // DATA_HPP

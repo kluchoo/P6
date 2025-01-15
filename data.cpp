@@ -44,3 +44,32 @@ void Data::printData() {
         << "Production: " << this->production << std::endl;
 }
 
+// Implementacja dodanych funkcji
+std::string Data::getTime() const {
+    return this->time;
+}
+
+float Data::getAutokonsumpcja() const {
+    return std::stof(this->autoconsumption);
+}
+
+float Data::getEksport() const {
+    return std::stof(this->eksport);
+}
+
+float Data::getImport() const {
+    return std::stof(this->import);
+}
+
+float Data::getPobor() const {
+    return std::stof(this->conscription);
+}
+
+float Data::getProdukcja() const {
+    return std::stof(this->production);
+}
+
+void Data::serialize(std::ofstream& out) const {
+    out << time << "," << autoconsumption << "," << eksport << "," << import << "," << conscription << "," << production << "\n";
+}
+

@@ -1,6 +1,8 @@
 #include <iostream>
 #include <fstream>
 #include "data.hpp"
+#include "dataTree.hpp"
+#include <string>
 #include <sstream>
 #include <vector>
 
@@ -29,6 +31,20 @@ int main() {
         data->setParameters(time, autoconsumption, eksport, import, conscription, production);
         dataVector.push_back(data);
     }
+
+    // Serializacja danych do pliku
+    std::ofstream outFile("serialized_data.txt");
+    for (const Data* data : dataVector) {
+        data->serialize(outFile);
+    }
+    outFile.close();
+
+    // Wczytanie danych do każdej ćwiartki klasy dataTree
+    DataTree tree;
+    for (Data* data : dataVector) {
+        tree.addData(data->getTime(), data);
+    }
+    tree.print();
 
     // Clean up allocated memory
     for (Data* data : dataVector) {
