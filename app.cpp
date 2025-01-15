@@ -1,22 +1,29 @@
-#include "app.hpp"
 #include <fstream>
+
 #ifdef _WIN32
 #include <windows.h>
 #endif
-#include "dataTree.hpp"
+
+#include "app.hpp"
+#include "lineData.hpp"
+#include "lineValidation.hpp"
+#include "DataTree.hpp"
+#include "logger.hpp"
 
 std::istream& operator>>(std::istream& iStream, MenuOption& menuOption) {
     int num;
     iStream >> num;
     menuOption = static_cast<MenuOption>(num);
+
     return iStream;
 }
 
-TreeData App::treeData;
+DataTree App::treeData;
 
 int App::mainMenu() {
     while (true) {
         std::cout << "MENU:\n\n";
+
         std::cout << "1. Załaduj dane z pliku\n";
         std::cout << "2. Wyświetl strukturę drzewa\n";
         std::cout << "3. Pobierz dane w określonym przedziale czasowym\n";
@@ -26,10 +33,13 @@ int App::mainMenu() {
         std::cout << "7. Wyszukaj dane w określonym przedziale czasowym z tolerancją\n";
         std::cout << "8. Zapisz dane do pliku binarnego\n";
         std::cout << "9. Wczytaj dane z pliku binarnego\n";
+
         std::cout << "10. Wyjdź\n\n";
+
         std::cout << "Wybierz działanie: ";
 
         MenuOption selectedOption;
+
         std::cin >> selectedOption;
 
         if (selectedOption > EXIT) {
@@ -68,7 +78,9 @@ int App::mainMenu() {
             handleLoadDataFromBinaryFile();
             break;
         case EXIT:
-            return handleExit();
+            {
+                return handleExit();
+            }
         default:
             std::cout << "Nieprawidłowa opcja, spróbuj ponownie\n";
         }
@@ -77,23 +89,27 @@ int App::mainMenu() {
     }
 }
 
+
 int App::run() {
 #ifdef _WIN32
+    // enable utf-8 printing on windows
     SetConsoleOutputCP(CP_UTF8);
 #endif
+
     int exitCode = mainMenu();
     return exitCode;
 }
 
 int App::handleLoadDataFromFile() {
     std::ifstream file;
+
     file.open("Chart Export.csv");
     if (!file.is_open()) {
         std::cerr << "Podczas otwierania pliku wystąpił błąd" << std::endl;
         return -1;
     }
 
-    std::vector<LineData> data;
+    vector<LineData> data;
     std::string line;
 
     while (std::getline(file, line)) {
@@ -105,16 +121,17 @@ int App::handleLoadDataFromFile() {
     }
 
     file.close();
-    std::cout << "Dane zostały załadowane pomyślnie." << std::endl;
-    std::cout << "Załadowano " << data.size() << " linii" << std::endl;
-    std::cout << "Znaleziono " << loggerErrorCount << " niepoprawnych linii" << std::endl;
-    std::cout << "Sprawdź pliki log i log_error, aby uzyskać więcej informacji" << std::endl;
+    cout << "Dane zostały załadowane pomyślnie." << endl;
+    cout << "Załadowano " << data.size() << " linii" << endl;
+    cout << "Znaleziono " << loggerErrorCount << " niepoprawnych linii" << endl;
+    cout << "Sprawdź pliki log i log_error, aby uzyskać więcej informacji" << endl;
 
     return 0;
 }
 
 int App::handleDisplayTreeStructure() {
     treeData.print();
+
     return 0;
 }
 
@@ -148,7 +165,7 @@ int App::handleCalculateSumsBetweenDates() {
     std::getline(std::cin, endDate);
 
     treeData.calculateSumsBetweenDates(startDate, endDate, autokonsumpcjaSum, eksportSum, importSum, poborSum, produkcjaSum);
-    std::cout << "Suma pomiędzy " << startDate << " a " << endDate << ":" << std::endl;
+    std::cout << "Suma pomiędzy " << startDate << " and " << endDate << ":" << std::endl;
     std::cout << "Autokonsumpcja: " << autokonsumpcjaSum << std::endl;
     std::cout << "Eksport: " << eksportSum << std::endl;
     std::cout << "Import: " << importSum << std::endl;
@@ -160,7 +177,7 @@ int App::handleCalculateSumsBetweenDates() {
 
 int App::handleCalculateAveragesBetweenDates() {
     std::string startDate, endDate;
-    float autokonsumpcjaAvg, eksportAvg, importAvg, poborAvg, produkcjaAvg;
+    float autokonsumpcjaSum, eksportSum, importSum, poborSum, produkcjaSum;
 
     std::cout << "Podaj datę początkową (dd.mm.yyyy hh:mm): ";
     std::cin.ignore();
@@ -168,13 +185,13 @@ int App::handleCalculateAveragesBetweenDates() {
     std::cout << "Podaj datę końcową (dd.mm.yyyy hh:mm): ";
     std::getline(std::cin, endDate);
 
-    treeData.calculateAveragesBetweenDates(startDate, endDate, autokonsumpcjaAvg, eksportAvg, importAvg, poborAvg, produkcjaAvg);
+    treeData.calculateAveragesBetweenDates(startDate, endDate, autokonsumpcjaSum, eksportSum, importSum, poborSum, produkcjaSum);
     std::cout << "Średnie wartości pomiędzy " << startDate << " a " << endDate << ":" << std::endl;
-    std::cout << "Autokonsumpcja: " << autokonsumpcjaAvg << std::endl;
-    std::cout << "Eksport: " << eksportAvg << std::endl;
-    std::cout << "Import: " << importAvg << std::endl;
-    std::cout << "Pobór: " << poborAvg << std::endl;
-    std::cout << "Produkcja: " << produkcjaAvg << std::endl;
+    std::cout << "Autokonsumpcja: " << autokonsumpcjaSum << std::endl;
+    std::cout << "Eksport: " << eksportSum << std::endl;
+    std::cout << "Import: " << importSum << std::endl;
+    std::cout << "Pobór: " << poborSum << std::endl;
+    std::cout << "Produkcja: " << produkcjaSum << std::endl;
 
     return 0;
 }
@@ -184,7 +201,6 @@ int App::handleCompareDataBetweenDates() {
     float autokonsumpcjaDiff, eksportDiff, importDiff, poborDiff, produkcjaDiff;
 
     std::cout << "Podaj pierwszą datę początkową (dd.mm.yyyy hh:mm): ";
-    std::cin.ignore();
     std::getline(std::cin, startDate1);
     std::cout << "Podaj pierwszą datę końcową (dd.mm.yyyy hh:mm): ";
     std::getline(std::cin, endDate1);
@@ -210,7 +226,6 @@ int App::handleSearchRecordsWithTolerance() {
     std::vector<LineData> recordsWithTolerance;
 
     std::cout << "Podaj datę początkową (dd.mm.yyyy hh:mm): ";
-    std::cin.ignore();
     std::getline(std::cin, startDate);
     std::cout << "Podaj datę końcową (dd.mm.yyyy hh:mm): ";
     std::getline(std::cin, endDate);
@@ -253,16 +268,16 @@ int App::handleLoadDataFromBinaryFile() {
 
     while (file.peek() != EOF) {
         LineData ld(file);
-        treeData.addData(ld);
     }
 
     file.close();
-    std::cout << "Dane zostały pomyślnie wczytane." << std::endl;
+    std::cout << "Dane zostały pomyślnie zapisane." << std::endl;
 
     return 0;
 }
 
 int App::handleExit() {
     std::cout << "Dziękujemy za korzystanie z programu\n";
+
     return 0;
 }

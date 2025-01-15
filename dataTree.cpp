@@ -1,19 +1,26 @@
-#include "dataTree.hpp"
+#include <iostream>
 #include <sstream>
 #include <iomanip>
 #include <ctime>
-#include <iostream>
 
-void DataTree::addData(const std::string& time, Data* data) {
-    std::tm tm = {};
-    std::istringstream ss(time);
-    ss >> std::get_time(&tm, "%d.%m.%Y %H:%M");
+#include "dataTree.hpp"
 
-    int year = tm.tm_year + 1900;
-    int month = tm.tm_mon + 1;
-    int day = tm.tm_mday;
-    int hour = tm.tm_hour;
-    int minute = tm.tm_min;
+using namespace std;
+
+void DataTree::addData(const LineData& lineData) {
+    stringstream ss(lineData.getDate());
+    string token;
+    vector<int> dateParts;
+
+    while (getline(ss, token, '.')) {
+        dateParts.push_back(stoi(token));
+    }
+
+    int year = dateParts[2];
+    int month = dateParts[1];
+    int day = dateParts[0];
+    int hour = stoi(lineData.getDate().substr(11, 2));
+    int minute = stoi(lineData.getDate().substr(14, 2));
     int quarter = (hour * 60 + minute) / 360;
 
     years[year].year = year;
@@ -22,44 +29,29 @@ void DataTree::addData(const std::string& time, Data* data) {
     years[year].months[month].days[day].quarters[quarter].quarter = quarter;
     years[year].months[month].days[day].quarters[quarter].hour = hour;
     years[year].months[month].days[day].quarters[quarter].minute = minute;
-    years[year].months[month].days[day].quarters[quarter].data.push_back(data);
-}
-
-void DataTree::clear() {
-    for (auto& year : years) {
-        for (auto& month : year.second.months) {
-            for (auto& day : month.second.days) {
-                for (auto& quarter : day.second.quarters) {
-                    for (Data* data : quarter.second.data) {
-                        delete data;
-                    }
-                }
-            }
-        }
-    }
-    years.clear();
+    years[year].months[month].days[day].quarters[quarter].data.push_back(lineData);
 }
 
 void DataTree::print() const {
     for (const auto& yearPair : years) {
-        const Year& yearNode = yearPair.second;
-        std::cout << "Year: " << yearNode.year << std::endl;
+        const YearNode& yearNode = yearPair.second;
+        cout << "Year: " << yearNode.year << endl;
 
         for (const auto& monthPair : yearNode.months) {
-            const Month& monthNode = monthPair.second;
-            std::cout << "\tMonth: " << monthNode.month << std::endl;
+            const MonthNode& monthNode = monthPair.second;
+            cout << "\tMonth: " << monthNode.month << endl;
 
             for (const auto& dayPair : monthNode.days) {
-                const Day& dayNode = dayPair.second;
-                std::cout << "\t\tDay: " << dayNode.day << std::endl;
+                const DayNode& dayNode = dayPair.second;
+                cout << "\t\tDay: " << dayNode.day << endl;
 
                 for (const auto& quarterPair : dayNode.quarters) {
-                    const Quarter& quarterNode = quarterPair.second;
-                    std::cout << "\t\t\tQuarter: " << quarterNode.quarter
-                        << " (Hour: " << quarterNode.hour << ", Minute: " << quarterNode.minute << ")" << std::endl;
+                    const QuarterNode& quarterNode = quarterPair.second;
+                    cout << "\t\t\tQuarter: " << quarterNode.quarter
+                        << " (Hour: " << quarterNode.hour << ", Minute: " << quarterNode.minute << ")" << endl;
 
-                    for (const auto& data : quarterNode.data) {
-                        data->printData();
+                    for (const auto& lineData : quarterNode.data) {
+                        lineData.printData();
                     }
                 }
             }
@@ -67,8 +59,8 @@ void DataTree::print() const {
     }
 }
 
-std::vector<Data*> DataTree::getDataBetweenDates(const std::string& startDate, const std::string& endDate) const {
-    std::vector<Data*> result;
+std::vector<LineData> DataTree::getDataBetweenDates(const std::string& startDate, const std::string& endDate) const {
+    std::vector<LineData> result;
 
     std::tm tm = {};
     std::istringstream ss(startDate);
@@ -81,21 +73,21 @@ std::vector<Data*> DataTree::getDataBetweenDates(const std::string& startDate, c
     time_t end = mktime(&tm);
 
     for (const auto& yearPair : years) {
-        const Year& yearNode = yearPair.second;
+        const YearNode& yearNode = yearPair.second;
         for (const auto& monthPair : yearNode.months) {
-            const Month& monthNode = monthPair.second;
+            const MonthNode& monthNode = monthPair.second;
             for (const auto& dayPair : monthNode.days) {
-                const Day& dayNode = dayPair.second;
+                const DayNode& dayNode = dayPair.second;
                 for (const auto& quarterPair : dayNode.quarters) {
-                    const Quarter& quarterNode = quarterPair.second;
-                    for (const auto& data : quarterNode.data) {
+                    const QuarterNode& quarterNode = quarterPair.second;
+                    for (const auto& lineData : quarterNode.data) {
                         std::tm tm = {};
-                        std::istringstream ss(data->getTime());
+                        std::istringstream ss(lineData.getDate());
                         ss >> std::get_time(&tm, "%d.%m.%Y %H:%M");
                         time_t dataTime = mktime(&tm);
 
                         if (dataTime >= start && dataTime <= end) {
-                            result.push_back(data);
+                            result.push_back(lineData);
                         }
                     }
                 }
@@ -113,13 +105,13 @@ void DataTree::calculateSumsBetweenDates(const std::string& startDate, const std
     poborSum = 0.0f;
     produkcjaSum = 0.0f;
 
-    std::vector<Data*> data = getDataBetweenDates(startDate, endDate);
-    for (const auto& dataItem : data) {
-        autokonsumpcjaSum += dataItem->getAutokonsumpcja();
-        eksportSum += dataItem->getEksport();
-        importSum += dataItem->getImport();
-        poborSum += dataItem->getPobor();
-        produkcjaSum += dataItem->getProdukcja();
+    std::vector<LineData> data = getDataBetweenDates(startDate, endDate);
+    for (const auto& lineData : data) {
+        autokonsumpcjaSum += lineData.getAutokonsumpcja();
+        eksportSum += lineData.getEksport();
+        importSum += lineData.getImport();
+        poborSum += lineData.getPobor();
+        produkcjaSum += lineData.getProdukcja();
     }
 }
 
@@ -127,13 +119,13 @@ void DataTree::calculateAveragesBetweenDates(const std::string& startDate, const
     float autokonsumpcjaSum = 0.0f, eksportSum = 0.0f, importSum = 0.0f, poborSum = 0.0f, produkcjaSum = 0.0f;
     int count = 0;
 
-    std::vector<Data*> data = getDataBetweenDates(startDate, endDate);
-    for (const auto& dataItem : data) {
-        autokonsumpcjaSum += dataItem->getAutokonsumpcja();
-        eksportSum += dataItem->getEksport();
-        importSum += dataItem->getImport();
-        poborSum += dataItem->getPobor();
-        produkcjaSum += dataItem->getProdukcja();
+    std::vector<LineData> data = getDataBetweenDates(startDate, endDate);
+    for (const auto& lineData : data) {
+        autokonsumpcjaSum += lineData.getAutokonsumpcja();
+        eksportSum += lineData.getEksport();
+        importSum += lineData.getImport();
+        poborSum += lineData.getPobor();
+        produkcjaSum += lineData.getProdukcja();
         count++;
     }
 
@@ -150,15 +142,15 @@ void DataTree::calculateAveragesBetweenDates(const std::string& startDate, const
 
 void DataTree::serialize(std::ofstream& out) const {
     for (const auto& yearPair : years) {
-        const Year& yearNode = yearPair.second;
+        const YearNode& yearNode = yearPair.second;
         for (const auto& monthPair : yearNode.months) {
-            const Month& monthNode = monthPair.second;
+            const MonthNode& monthNode = monthPair.second;
             for (const auto& dayPair : monthNode.days) {
-                const Day& dayNode = dayPair.second;
+                const DayNode& dayNode = dayPair.second;
                 for (const auto& quarterPair : dayNode.quarters) {
-                    const Quarter& quarterNode = quarterPair.second;
-                    for (const auto& data : quarterNode.data) {
-                        data->serialize(out);
+                    const QuarterNode& quarterNode = quarterPair.second;
+                    for (const auto& lineData : quarterNode.data) {
+                        lineData.serialize(out);
                     }
                 }
             }
@@ -167,25 +159,25 @@ void DataTree::serialize(std::ofstream& out) const {
 }
 
 void DataTree::compareDataBetweenDates(const std::string& startDate1, const std::string& endDate1, const std::string& startDate2, const std::string& endDate2, float& autokonsumpcjaDiff, float& eksportDiff, float& importDiff, float& poborDiff, float& produkcjaDiff) const {
-    std::vector<Data*> data1 = getDataBetweenDates(startDate1, endDate1);
-    std::vector<Data*> data2 = getDataBetweenDates(startDate2, endDate2);
+    std::vector<LineData> data1 = getDataBetweenDates(startDate1, endDate1);
+    std::vector<LineData> data2 = getDataBetweenDates(startDate2, endDate2);
 
     float autokonsumpcjaSum1 = 0.0f, eksportSum1 = 0.0f, importSum1 = 0.0f, poborSum1 = 0.0f, produkcjaSum1 = 0.0f;
-    for (const auto& dataItem : data1) {
-        autokonsumpcjaSum1 += dataItem->getAutokonsumpcja();
-        eksportSum1 += dataItem->getEksport();
-        importSum1 += dataItem->getImport();
-        poborSum1 += dataItem->getPobor();
-        produkcjaSum1 += dataItem->getProdukcja();
+    for (const auto& lineData : data1) {
+        autokonsumpcjaSum1 += lineData.getAutokonsumpcja();
+        eksportSum1 += lineData.getEksport();
+        importSum1 += lineData.getImport();
+        poborSum1 += lineData.getPobor();
+        produkcjaSum1 += lineData.getProdukcja();
     }
 
     float autokonsumpcjaSum2 = 0.0f, eksportSum2 = 0.0f, importSum2 = 0.0f, poborSum2 = 0.0f, produkcjaSum2 = 0.0f;
-    for (const auto& dataItem : data2) {
-        autokonsumpcjaSum2 += dataItem->getAutokonsumpcja();
-        eksportSum2 += dataItem->getEksport();
-        importSum2 += dataItem->getImport();
-        poborSum2 += dataItem->getPobor();
-        produkcjaSum2 += dataItem->getProdukcja();
+    for (const auto& lineData : data2) {
+        autokonsumpcjaSum2 += lineData.getAutokonsumpcja();
+        eksportSum2 += lineData.getEksport();
+        importSum2 += lineData.getImport();
+        poborSum2 += lineData.getPobor();
+        produkcjaSum2 += lineData.getProdukcja();
     }
 
     autokonsumpcjaDiff = autokonsumpcjaSum2 - autokonsumpcjaSum1;
@@ -195,8 +187,8 @@ void DataTree::compareDataBetweenDates(const std::string& startDate1, const std:
     produkcjaDiff = produkcjaSum2 - produkcjaSum1;
 }
 
-std::vector<Data*> DataTree::searchRecordsWithTolerance(const std::string& startDate, const std::string& endDate, float value, float tolerance) const {
-    std::vector<Data*> result;
+std::vector<LineData> DataTree::searchRecordsWithTolerance(const std::string& startDate, const std::string& endDate, float value, float tolerance) const {
+    std::vector<LineData> result;
 
     std::tm tm = {};
     std::istringstream ss(startDate);
@@ -207,16 +199,16 @@ std::vector<Data*> DataTree::searchRecordsWithTolerance(const std::string& start
     ss >> std::get_time(&tm, "%d.%m.%Y %H:%M");
 
     for (const auto& yearPair : years) {
-        const Year& yearNode = yearPair.second;
+        const YearNode& yearNode = yearPair.second;
         for (const auto& monthPair : yearNode.months) {
-            const Month& monthNode = monthPair.second;
+            const MonthNode& monthNode = monthPair.second;
             for (const auto& dayPair : monthNode.days) {
-                const Day& dayNode = dayPair.second;
+                const DayNode& dayNode = dayPair.second;
                 for (const auto& quarterPair : dayNode.quarters) {
-                    const Quarter& quarterNode = quarterPair.second;
-                    for (const auto& data : quarterNode.data) {
-                        if (data->getAutokonsumpcja() >= value - tolerance && data->getAutokonsumpcja() <= value + tolerance) {
-                            result.push_back(data);
+                    const QuarterNode& quarterNode = quarterPair.second;
+                    for (const auto& lineData : quarterNode.data) {
+                        if (lineData.getAutokonsumpcja() >= value - tolerance && lineData.getAutokonsumpcja() <= value + tolerance) {
+                            result.push_back(lineData);
                         }
                     }
                 }
