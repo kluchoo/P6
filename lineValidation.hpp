@@ -6,20 +6,7 @@
 #include <algorithm>
 #include "logger.hpp"
 
-/**
- * @brief Funkcja sprawdzająca poprawność wiersza danych.
- *
- * @details Sprawdza, czy wiersz:
- * - Nie jest pusty.
- * - Nie zawiera nagłówka (np. słowo "Time").
- * - Nie zawiera liter.
- * - Zawiera dokładnie 5 przecinków, co odpowiada oczekiwanej liczbie parametrów.
- *
- * W przypadku błędu odpowiedni komunikat zostaje zapisany w logach.
- *
- * @param line Wiersz danych wejściowych jako ciąg znaków.
- * @return true, jeśli wiersz jest poprawny, false w przeciwnym razie.
- */
+
 bool lineValidation(const std::string& line) {
     if (line.empty()) {
         loggerError.log("Pusta linia");

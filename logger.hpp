@@ -31,6 +31,8 @@ class Logger {
     */
     ~Logger();
 
+
+
     /**
      * @brief Zapisuje komunikat do pliku logu.
      *
