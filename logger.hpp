@@ -31,8 +31,6 @@ class Logger {
     */
     ~Logger();
 
-
-
     /**
      * @brief Zapisuje komunikat do pliku logu.
      *
@@ -61,6 +59,9 @@ extern Logger logger;
  * Instancja klasy Logger przeznaczona do rejestrowania komunikatów błędów programu.
  */
 extern Logger loggerError;
+
+//eeror count
+
 
 /**
  * @var loggerErrorCount
